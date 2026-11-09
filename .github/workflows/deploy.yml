@@ -1,0 +1,35 @@
+name: Deploy FixMatch to GitHub Pages
+
+on:
+  push:
+    branches: ['main'] # หรือ "master" ตาม Branch หลักของคุณ
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # จำเป็นสำหรับการพุชไฟล์บิวด์ข้าม Branch ใน Private Repository
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies & Build
+        run: |
+          npm ci
+          npx quasar build
+
+      # เทคนิคป้องกันหน้า 404 เวลา Refresh หน้าเว็บย่อยใน SPA (Single Page Application)
+      - name: Copy index.html to 404.html
+        run: cp dist/spa/index.html dist/spa/404.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist/spa # โฟลเดอร์ Output มาตรฐานของ Quasar SPA

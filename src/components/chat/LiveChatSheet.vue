@@ -1,0 +1,957 @@
+<template>
+  <q-dialog v-model="isOpen" position="bottom" transition-show="slide-up" transition-hide="slide-down">
+    <q-card class="chat-card font-sans">
+      <!-- Drag Handle for Mobile -->
+      <div class="drag-handle-container">
+        <div class="drag-handle"></div>
+      </div>
+
+      <!-- Chat Header -->
+      <div class="chat-header">
+        <div class="header-profile">
+          <div class="avatar-badge-wrapper">
+            <q-avatar size="42px">
+              <img :src="getValidAvatar(technician?.avatarUrl)" @error="onAvatarError"
+                :alt="isTechSide ? 'รูปโปรไฟล์ลูกค้า' : 'รูปโปรไฟล์ช่าง'" />
+            </q-avatar>
+            <span class="online-indicator"></span>
+          </div>
+
+          <div>
+            <div class="tech-name-wrapper">
+              <h3 class="tech-name">{{ technician?.name }}</h3>
+              <q-icon name="verified" size="16px" class="icon-verified" />
+            </div>
+            <p class="tech-subtext">
+              {{ technician?.specialty }} •
+              <span :class="isOnline ? 'online-text' : 'offline-text'">{{
+              isOnline ? 'กำลังออนไลน์ (Live)' : 'แชทสดไม่พร้อมใช้งาน'
+              }}</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <a :href="`tel:${technician?.phone}`" class="call-btn">
+            <q-icon name="call" size="18px" />
+          </a>
+          <q-btn icon="close" flat round dense color="grey-7" v-close-popup />
+        </div>
+      </div>
+
+      <!-- Quick Issue Context Banner -->
+      <div class="issue-banner">
+        <div class="issue-info">
+          <q-icon name="build" size="14px" class="icon-build" />
+          <span class="issue-label">เคสซ่อม:</span>
+          <span class="issue-title">{{ issueTitle }}</span>
+        </div>
+        <span class="issue-ref-code">#{{ orderId }}</span>
+      </div>
+
+      <!-- Messages Body -->
+      <div ref="chatContainerRef" class="messages-body">
+        <div v-for="msg in messages" :key="msg.id" class="message-row" :class="{
+          'align-me': isMyMessage(msg),
+          'align-other': !isMyMessage(msg) && msg.sender !== 'system',
+          'align-system': msg.sender === 'system',
+        }">
+          <!-- System Message -->
+          <div v-if="msg.sender === 'system'" class="system-msg-wrapper">
+            <span class="system-msg-badge">{{ msg.text }}</span>
+          </div>
+
+          <!-- User or Tech Message -->
+          <template v-else>
+            <div class="message-content" :class="{ 'row-reverse': isMyMessage(msg) }">
+              <!-- รูปโปรไฟล์ฝั่งคู่สนทนาจะแสดงเฉพาะฝั่งซ้าย -->
+              <q-avatar v-if="!isMyMessage(msg)" size="28px" class="tech-msg-avatar">
+                <img :src="getValidAvatar(technician?.avatarUrl)"
+                  :alt="isTechSide ? 'รูปโปรไฟล์ลูกค้า' : 'รูปโปรไฟล์ช่าง'" />
+              </q-avatar>
+
+              <div class="bubble-group" :class="{ 'items-end': isMyMessage(msg) }">
+                <div v-if="msg.text" class="message-bubble" :class="isMyMessage(msg) ? 'bubble-user' : 'bubble-tech'">
+                  {{ msg.text }}
+                </div>
+                <div v-if="msg.imageUrl" class="image-bubble">
+                  <img :src="msg.imageUrl" class="chat-attached-img" alt="Attachment" />
+                </div>
+                <div v-if="msg.type === 'invoice' && msg.invoice" class="invoice-bubble">
+                  <div class="invoice-card-title">
+                    <q-icon name="picture_as_pdf" color="negative" size="24px" />
+                    <div>
+                      <div class="text-weight-bold">ใบสรุปรายการซ่อม</div>
+                      <div class="text-caption">ยอดรวม ฿{{ formatCurrency(msg.invoice.total) }}</div>
+                    </div>
+                  </div>
+                  <div v-for="(item, index) in msg.invoice.items" :key="index" class="invoice-line">
+                    <span>{{ item.description }}</span>
+                    <span>฿{{ formatCurrency(item.amount) }}</span>
+                  </div>
+                  <q-btn unelevated no-caps color="primary" icon="download" label="ดาวน์โหลด PDF"
+                    class="full-width q-mt-sm" @click="downloadInvoice(msg.invoice)" />
+                </div>
+                <div v-if="msg.type === 'receipt' && msg.receipt" class="invoice-bubble">
+                  <div class="invoice-card-title">
+                    <q-icon name="task_alt" color="positive" size="24px" />
+                    <div>
+                      <div class="text-weight-bold">ใบยืนยันการชำระเงินสด</div>
+                      <div class="text-caption">ยอดรับชำระ ฿{{ formatCurrency(msg.receipt.total) }}</div>
+                    </div>
+                  </div>
+                  <div class="text-caption text-grey-7">วันที่ชำระ: {{ msg.receipt.paidAt }}</div>
+                  <q-btn unelevated no-caps color="positive" icon="download" label="ดาวน์โหลดใบยืนยัน PDF"
+                    class="full-width q-mt-sm" @click="downloadInvoice(msg.receipt)" />
+                </div>
+                <div class="message-time">
+                  {{ msg.time }}
+                  <span v-if="msg.deliveryStatus === 'sending'"> • กำลังส่ง</span>
+                  <span v-else-if="msg.deliveryStatus === 'failed'" class="text-negative"> • ส่งไม่สำเร็จ</span>
+                  <q-btn v-if="msg.deliveryStatus === 'failed'" flat dense no-caps color="negative"
+                    label="ส่งอีกครั้ง" @click="retryMessage(msg)" />
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Quick Replies Carousel -->
+      <div class="quick-replies-bar no-scrollbar">
+        <button v-for="(quickText, idx) in quickReplies" :key="idx" @click="sendQuickReply(quickText)"
+          class="quick-reply-btn">
+          {{ quickText }}
+        </button>
+      </div>
+
+      <!-- Input Footer -->
+      <div class="chat-footer">
+        <q-form @submit.prevent="sendMessage" class="chat-form">
+          <q-btn flat round dense icon="photo_camera" color="grey-7" class="action-btn" @click="triggerImageUpload" />
+          <input type="file" ref="fileInputRef" accept="image/*" class="file-input-hidden"
+            @change="handleImageSelected" />
+
+          <q-input v-model="inputText" dense outlined
+            :placeholder="isTechSide ? 'พิมพ์ข้อความคุยกับลูกค้า...' : 'พิมพ์ข้อความคุยกับช่าง...'" class="chat-input"
+            @keydown.enter.prevent="sendMessage" />
+          <q-btn type="button" unelevated no-caps icon="send" label="ส่ง" color="primary"
+            :disable="!inputText.trim()" aria-label="ส่งข้อความ" class="send-btn"
+            @click="sendMessage" />
+        </q-form>
+      </div>
+    </q-card>
+  </q-dialog>
+</template>
+
+<script setup>
+import { ref, watch, nextTick, onUnmounted } from 'vue'
+import { useQuasar } from 'quasar'
+import { api, SERVER_URL } from '@/boot/axios'
+import { createPaymentReceiptPdf } from '@/services/invoicePdf'
+
+const props = defineProps({
+  modelValue: { type: Boolean, default: false },
+  orderId: { type: String, default: '' },
+  isTechSide: { type: Boolean, default: false },
+  pendingInvoice: { type: Object, default: null },
+  pendingReceipt: { type: Object, default: null },
+  technician: Object,
+  issueTitle: String
+})
+
+const emit = defineEmits(['update:modelValue', 'invoice-received'])
+
+const $q = useQuasar()
+const isOpen = ref(props.modelValue)
+const inputText = ref('')
+const chatContainerRef = ref(null)
+const fileInputRef = ref(null)
+const isOnline = ref(false)
+
+let websocket = null
+
+let activeMessageOrderId = props.orderId
+
+watch(
+  () => [props.modelValue, props.orderId],
+  ([isVisible, orderId], [wasVisible, previousOrderId] = []) => {
+    isOpen.value = isVisible
+    if (isVisible) {
+      if (websocket && wasVisible && orderId !== previousOrderId) {
+        closeWebSocket()
+      }
+      const savedInvoices = getSavedInvoices(orderId)
+      const currentMessages = activeMessageOrderId === orderId ? messages.value.slice(1) : []
+      messages.value = [messages.value[0], ...currentMessages]
+      for (const message of savedInvoices) mergeMessage(message)
+      activeMessageOrderId = orderId
+      initWebSocket()
+      loadChatMessages(orderId)
+      scrollToBottom()
+    } else {
+      closeWebSocket()
+    }
+  },
+)
+
+watch(isOpen, (val) => {
+  emit('update:modelValue', val)
+})
+
+const sentDocumentIds = new Set()
+const sendingDocumentIds = new Set()
+const trySendPendingDocuments = () => {
+  const pendingDocuments = [
+    { document: props.pendingInvoice, type: 'invoice' },
+    { document: props.pendingReceipt, type: 'receipt' },
+  ]
+
+  for (const { document, type } of pendingDocuments) {
+    if (!document || sentDocumentIds.has(document.id) || sendingDocumentIds.has(document.id)) continue
+
+    const messageData = {
+      id: document.id,
+      orderId: document.orderId || props.orderId,
+      sender: props.isTechSide ? 'tech' : 'user',
+      type,
+      text: type === 'receipt'
+        ? 'ยืนยันการชำระเงินสดแล้ว ส่งใบยืนยันการชำระเงิน'
+        : 'ส่งใบสรุปรายการซ่อมและค่าบริการแล้ว',
+      [type]: {
+        fileName: document.fileName,
+        pdfBase64: document.pdfBase64,
+        items: document.items,
+        total: document.total,
+        paidAt: document.paidAt,
+        technician: document.technician,
+      },
+      time: getCurrentTime(),
+    }
+
+    if (messages.value.some(message => message.id === messageData.id)) {
+      sentDocumentIds.add(document.id)
+      continue
+    }
+
+    sendingDocumentIds.add(document.id)
+    sendChatMessage(messageData).then((success) => {
+      if (success) sentDocumentIds.add(document.id)
+    }).finally(() => sendingDocumentIds.delete(document.id))
+  }
+}
+
+watch(() => [props.pendingInvoice, props.pendingReceipt], trySendPendingDocuments)
+
+// 🟢 ตรวจสอบข้อความว่าเป็นของฝั่งเราหรือไม่ โดยเทียบกับบทบาทปัจจุบัน (isTechSide)
+const isMyMessage = (msg) => {
+  if (msg.sender === 'system') return false
+  // ถ้าเปิดจากฝั่งช่าง (isTechSide = true) ข้อความที่เป็นของช่างถือเป็นของเรา (อยู่ขวา)
+  // ถ้าเปิดจากฝั่งลูกค้า (isTechSide = false) ข้อความที่เป็นของ user ถือเป็นของเรา (อยู่ขวา)
+  return props.isTechSide ? msg.sender === 'tech' : msg.sender === 'user'
+}
+
+const initWebSocket = () => {
+  if (websocket) return
+
+  const isHttps = window.location.protocol === 'https:'
+  const protocol = isHttps ? 'wss:' : 'ws:'
+  const host = window.location.host
+  const hostname = window.location.hostname
+
+  const isTunnel = isHttps || host.includes('trycloudflare.com')
+  const token = localStorage.getItem('auth_token')?.replace(/^Bearer\s+/i, '').trim()
+  if (!token) {
+    isOnline.value = false
+    return
+  }
+  const wsUrl = isTunnel
+    ? `${protocol}//${host}/ws/chat/${props.orderId}?token=${encodeURIComponent(token)}`
+    : `${protocol}//${hostname}:8000/ws/chat/${props.orderId}?token=${encodeURIComponent(token)}`
+
+  websocket = new WebSocket(wsUrl)
+
+  websocket.onopen = () => {
+    isOnline.value = true
+    console.log('เชื่อมต่อ WebSocket สำเร็จ!')
+    trySendPendingDocuments()
+  }
+
+  websocket.onmessage = (event) => {
+    const data = JSON.parse(event.data)
+    if (data.orderId && String(data.orderId) !== String(props.orderId)) return
+    if (data.type === 'invoice' || data.type === 'receipt') {
+      persistChatDocument(data)
+    }
+    mergeMessage(data)
+    if (data.type === 'invoice' && data.invoice?.items?.length) {
+      emit('invoice-received', data)
+    }
+    scrollToBottom()
+  }
+
+  websocket.onclose = () => {
+    isOnline.value = false
+    websocket = null
+  }
+
+  websocket.onerror = (error) => {
+    isOnline.value = false
+    console.error('WebSocket Error:', error)
+  }
+}
+
+const closeWebSocket = () => {
+  if (websocket) {
+    websocket.close()
+    websocket = null
+  }
+  isOnline.value = false
+}
+
+onUnmounted(() => {
+  closeWebSocket()
+})
+
+const quickReplies = [
+  'ใกล้ถึงหรือยังครับ?',
+  'จอดรถบริเวณลานหน้าบ้านได้เลยครับ',
+  'ปิดวาล์วน้ำหลักเรียบร้อยแล้วครับ',
+  'ต้องการให้อุปกรณ์อะไรเพิ่มเติมไหมครับ?',
+]
+
+const messages = ref([
+  { id: 1, sender: 'system', text: 'เริ่มการสนทนากับช่างเทคนิค (Real-time)', time: '10:05' },
+])
+
+const mergeMessage = (message) => {
+  const index = messages.value.findIndex(existing => existing.id === message.id)
+  if (index < 0) {
+    messages.value.push(message)
+  } else {
+    messages.value[index] = { ...messages.value[index], ...message, deliveryStatus: 'sent' }
+  }
+}
+
+const loadChatMessages = async (orderId) => {
+  try {
+    const response = await api.get(`/jobs/${encodeURIComponent(orderId)}/messages`)
+    if (String(props.orderId) !== String(orderId)) return
+    const serverMessages = response.data?.data
+    if (!Array.isArray(serverMessages)) throw new Error('ข้อมูลข้อความจากระบบไม่ถูกต้อง')
+    for (const message of serverMessages) {
+      mergeMessage({ ...message, deliveryStatus: 'sent' })
+      if (message.type === 'invoice' || message.type === 'receipt') persistChatDocument(message)
+      if (message.type === 'invoice' && message.invoice?.items?.length) emit('invoice-received', message)
+    }
+    if (!props.isTechSide && !serverMessages.some(message => message.type === 'receipt')) {
+      const trackingResponse = await api.get(`/jobs/tracking/${encodeURIComponent(orderId)}`)
+      const tracking = trackingResponse.data
+      if (tracking?.payment?.status === 'PAID' && tracking.invoice?.items?.length) {
+        const paidAt = tracking.payment.paid_at
+          ? new Date(tracking.payment.paid_at).toLocaleString('th-TH')
+          : ''
+        const pdf = await createPaymentReceiptPdf({
+          orderNo: orderId,
+          job: { customerName: 'ลูกค้า FixMatch', issueDescription: props.issueTitle || 'งานซ่อมแซม' },
+          technicianName: props.technician?.name || 'ช่างผู้ให้บริการ',
+          items: tracking.invoice.items,
+          total: Number(tracking.payment.amount),
+          paidAt,
+        })
+        const receipt = {
+          ...pdf,
+          items: tracking.invoice.items,
+          total: Number(tracking.payment.amount),
+          paidAt,
+          technician: props.technician,
+        }
+        await sendChatMessage({
+          id: `${orderId}-cash-receipt`,
+          orderId,
+          sender: 'user',
+          type: 'receipt',
+          text: 'ยืนยันการชำระเงินสดแล้ว ส่งใบยืนยันการชำระเงิน',
+          receipt,
+          time: getCurrentTime(),
+        })
+      }
+    }
+    scrollToBottom()
+  } catch (error) {
+    console.error('โหลดประวัติแชทจากระบบไม่สำเร็จ:', error)
+  }
+}
+
+const sendChatMessage = async (messageData) => {
+  mergeMessage({ ...messageData, deliveryStatus: 'sending' })
+  scrollToBottom()
+  try {
+    const response = await api.post(
+      `/jobs/${encodeURIComponent(props.orderId)}/messages`,
+      messageData,
+    )
+    const savedMessage = response.data?.data
+    if (!savedMessage) throw new Error('ระบบไม่ได้ยืนยันการบันทึกข้อความ')
+    mergeMessage({ ...savedMessage, deliveryStatus: 'sent' })
+    if (savedMessage.type === 'invoice' || savedMessage.type === 'receipt') persistChatDocument(savedMessage)
+    return true
+  } catch (error) {
+    console.error('ส่งข้อความในแชทไม่สำเร็จ:', error)
+    const index = messages.value.findIndex(message => message.id === messageData.id)
+    if (index >= 0) messages.value[index] = { ...messages.value[index], deliveryStatus: 'failed' }
+    return false
+  }
+}
+
+const retryMessage = (message) => {
+  const messageData = { ...message }
+  delete messageData.deliveryStatus
+  sendChatMessage(messageData)
+}
+
+const getInvoiceStorageKey = (orderId) => `fixmatch_chat_invoices_${encodeURIComponent(String(orderId))}`
+
+const getSavedInvoices = (orderId) => {
+  try {
+    const savedMessages = JSON.parse(localStorage.getItem(getInvoiceStorageKey(orderId)) || '[]')
+    if (!Array.isArray(savedMessages)) {
+      throw new Error('ข้อมูลบิลที่บันทึกไว้ไม่ถูกต้อง')
+    }
+    return savedMessages.filter(message =>
+      (message.type === 'invoice' && message.invoice?.pdfBase64)
+      || (message.type === 'receipt' && message.receipt?.pdfBase64),
+    )
+  } catch (error) {
+    console.error('ไม่สามารถอ่านบิลที่บันทึกไว้ในแชทได้:', error)
+    return []
+  }
+}
+
+const persistChatDocument = (message) => {
+  const hasPdf = (message.type === 'invoice' && message.invoice?.pdfBase64)
+    || (message.type === 'receipt' && message.receipt?.pdfBase64)
+  if (!hasPdf) return
+
+  const orderId = message.orderId || props.orderId
+  const savedInvoices = getSavedInvoices(orderId)
+  if (savedInvoices.some(saved => saved.id === message.id)) return
+
+  try {
+    localStorage.setItem(
+      getInvoiceStorageKey(orderId),
+      JSON.stringify([...savedInvoices, message]),
+    )
+  } catch (error) {
+    console.error('ไม่สามารถบันทึกบิลไว้ในแชทบนอุปกรณ์นี้ได้:', error)
+  }
+}
+
+const getCurrentTime = () => {
+  const now = new Date()
+  return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
+}
+
+const formatCurrency = (amount) => Number(amount || 0).toLocaleString('th-TH', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
+const downloadInvoice = (invoice) => {
+  if (!invoice?.pdfBase64 || !invoice.fileName) return
+
+  const binary = atob(invoice.pdfBase64)
+  const bytes = Uint8Array.from(binary, character => character.charCodeAt(0))
+  const file = new Blob([bytes], { type: 'application/pdf' })
+  const url = URL.createObjectURL(file)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = invoice.fileName
+  link.click()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+const scrollToBottom = async () => {
+  await nextTick()
+  if (chatContainerRef.value) {
+    chatContainerRef.value.scrollTop = chatContainerRef.value.scrollHeight
+  }
+}
+
+const sendMessage = () => {
+  const text = inputText.value.trim()
+  if (!text) return
+
+  const messageData = {
+    id: createMessageId(),
+    orderId: props.orderId,
+    sender: props.isTechSide ? 'tech' : 'user',
+    text,
+    type: 'text',
+    time: getCurrentTime()
+  }
+
+  inputText.value = ''
+  sendChatMessage(messageData)
+}
+
+const createMessageId = () => globalThis.crypto?.randomUUID?.()
+  || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+
+const sendQuickReply = (text) => {
+  inputText.value = text
+  sendMessage()
+}
+
+const triggerImageUpload = () => {
+  if (fileInputRef.value) fileInputRef.value.click()
+}
+
+const handleImageSelected = async (e) => {
+  const input = e.target
+  const file = input.files[0]
+  if (!file) return
+  input.value = ''
+  if (file.size > 4 * 1024 * 1024) {
+    $q.notify({ type: 'warning', message: 'รูปภาพต้องมีขนาดไม่เกิน 4 MB' })
+    return
+  }
+
+  try {
+    const imageUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = () => reject(new Error('อ่านไฟล์รูปภาพไม่สำเร็จ'))
+      reader.readAsDataURL(file)
+    })
+    sendChatMessage({
+      id: createMessageId(),
+      orderId: props.orderId,
+      sender: props.isTechSide ? 'tech' : 'user',
+      type: 'image',
+      imageUrl,
+      time: getCurrentTime(),
+    })
+  } catch (error) {
+    console.error('อ่านไฟล์รูปภาพไม่สำเร็จ:', error)
+    $q.notify({ type: 'negative', message: 'อ่านรูปภาพไม่สำเร็จ กรุณาลองอีกครั้ง' })
+  }
+}
+
+const getValidAvatar = (url) => {
+  if (!url || url === 'null' || url === 'undefined') return 'https://cdn.quasar.dev/img/avatar.png'
+  if (String(url).startsWith('http')) return url
+  if (String(url).includes('avatar2.jpg')) return 'https://cdn.quasar.dev/img/avatar.png'
+
+  const baseUrl = SERVER_URL ? SERVER_URL.replace(/\/api\/?$/, '') : 'http://localhost:8000'
+  const cleanFilename = String(url).replace(/^\/?(uploads\/)?/, '')
+  return `${baseUrl}/uploads/${cleanFilename}`
+}
+
+const onAvatarError = (evt) => {
+  evt.target.src = 'https://cdn.quasar.dev/img/avatar.png'
+}
+</script>
+
+<style scoped>
+.chat-card {
+  width: 100%;
+  max-width: 36rem;
+  height: 85vh;
+  border-top-left-radius: 1.5rem;
+  border-top-right-radius: 1.5rem;
+  background-color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+@media (min-width: 640px) {
+  .chat-card {
+    height: 680px;
+    border-radius: 1rem;
+  }
+}
+
+.drag-handle-container {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.75rem;
+  padding-bottom: 0.25rem;
+  background-color: #ffffff;
+}
+
+@media (min-width: 640px) {
+  .drag-handle-container {
+    display: none;
+  }
+}
+
+.drag-handle {
+  width: 3rem;
+  height: 0.375rem;
+  background-color: #e2e8f0;
+  border-radius: 9999px;
+}
+
+.chat-header {
+  padding: 1rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .chat-header {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+.header-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.avatar-badge-wrapper {
+  position: relative;
+}
+
+.online-indicator {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 0.75rem;
+  height: 0.75rem;
+  background-color: #10b981;
+  border: 2px solid #ffffff;
+  border-radius: 9999px;
+}
+
+.tech-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.tech-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.icon-verified {
+  color: #0284c7;
+}
+
+.tech-subtext {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.125rem;
+  margin-bottom: 0;
+}
+
+.online-text {
+  color: #059669;
+  font-weight: 500;
+}
+
+.offline-text {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.call-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background-color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.call-btn:hover {
+  background-color: #e2e8f0;
+}
+
+.issue-banner {
+  padding: 0.5rem 1rem;
+  background-color: rgba(240, 249, 255, 0.8);
+  border-bottom: 1px solid rgba(224, 242, 254, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+.issue-info {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icon-build {
+  color: #0284c7;
+}
+
+.issue-label {
+  font-weight: 500;
+  color: #334155;
+}
+
+.issue-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.issue-ref-code {
+  font-family: monospace;
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.messages-body {
+  flex-grow: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .messages-body {
+    padding: 1.5rem;
+  }
+}
+
+.message-row {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.message-row.align-me {
+  align-items: flex-end;
+}
+
+.message-row.align-other {
+  align-items: flex-start;
+}
+
+.message-row.align-system {
+  align-items: center;
+}
+
+.system-msg-wrapper {
+  width: 100%;
+  text-align: center;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.system-msg-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+  background-color: rgba(226, 232, 240, 0.6);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+}
+
+.message-content {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  max-width: 82%;
+}
+
+.message-content.row-reverse {
+  flex-direction: row-reverse;
+}
+
+.tech-msg-avatar {
+  margin-bottom: 0.25rem;
+  flex-shrink: 0;
+}
+
+.bubble-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.message-bubble {
+  padding: 0.625rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.bubble-user {
+  background-color: #0284c7;
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+  border-bottom-left-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.bubble-tech {
+  background-color: #ffffff;
+  color: #1e293b;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.image-bubble {
+  border-radius: 1rem;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  max-width: 240px;
+}
+
+.invoice-bubble {
+  width: min(100%, 300px);
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.875rem;
+  background-color: #ffffff;
+  color: #1e293b;
+}
+
+.invoice-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.5rem;
+}
+
+.invoice-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+  font-size: 0.75rem;
+}
+
+.chat-attached-img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  display: block;
+}
+
+.message-time {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  font-family: monospace;
+}
+
+.quick-replies-bar {
+  padding: 0.5rem 1rem;
+  background-color: #ffffff;
+  border-top: 1px solid #f1f5f9;
+  overflow-x: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.quick-reply-btn {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-reply-btn:hover {
+  background-color: #f0f9ff;
+  color: #0284c7;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.chat-footer {
+  padding: 0.75rem;
+  background-color: #ffffff;
+  border-top: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .chat-footer {
+    padding: 1rem;
+  }
+}
+
+.chat-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-btn:hover {
+  background-color: #f1f5f9;
+}
+
+.file-input-hidden {
+  display: none;
+}
+
+.chat-input {
+  flex-grow: 1;
+}
+
+:deep(.chat-input .q-field__control) {
+  border-radius: 0.75rem !important;
+  background-color: #f8fafc !important;
+}
+
+.send-btn {
+  flex-shrink: 0;
+  min-width: 4.25rem;
+}
+</style>
