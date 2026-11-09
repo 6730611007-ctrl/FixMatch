@@ -8,7 +8,7 @@ import axios from 'axios'
 // const SERVER_URL =
 //   host === 'localhost' || host === '127.0.0.1' ? 'http://127.0.0.1:8000' : `${protocol}//${host}`
 
-const SERVER_URL = 'https://your-name.ngrok-free.app'
+const SERVER_URL = 'https://disorder-mobilize-exile.ngrok-free.dev'
 
 const api = axios.create({
   // 🟢 ตั้งค่าเป็น Relative Path '/api' เพื่อให้ยิงผ่าน Vite Proxy เสมอ (แก้ Mixed Content 100%)
