@@ -1,8 +1,8 @@
 import { boot } from 'quasar/wrappers'
 import axios from 'axios'
 
-const host = window.location.hostname
-const protocol = window.location.protocol
+// const host = window.location.hostname
+// const protocol = window.location.protocol
 
 // กำหนด SERVER_URL แบบครอบคลุมทั้ง Local, LAN IP, ngrok และ Cloudflare Tunnel
 // const SERVER_URL =
