@@ -5,12 +5,14 @@ const host = window.location.hostname
 const protocol = window.location.protocol
 
 // กำหนด SERVER_URL แบบครอบคลุมทั้ง Local, LAN IP, ngrok และ Cloudflare Tunnel
-const SERVER_URL =
-  host === 'localhost' || host === '127.0.0.1' ? 'http://127.0.0.1:8000' : `${protocol}//${host}`
+// const SERVER_URL =
+//   host === 'localhost' || host === '127.0.0.1' ? 'http://127.0.0.1:8000' : `${protocol}//${host}`
+
+const SERVER_URL = 'https://your-name.ngrok-free.app'
 
 const api = axios.create({
   // 🟢 ตั้งค่าเป็น Relative Path '/api' เพื่อให้ยิงผ่าน Vite Proxy เสมอ (แก้ Mixed Content 100%)
-  baseURL: '/api',
+  baseURL: SERVER_URL,
   timeout: 100000,
   headers: {
     Accept: 'application/json',
@@ -23,7 +25,6 @@ const getStoredAccessToken = () => {
   return typeof directToken === 'string' ? directToken.trim().replace(/^Bearer\s+/i, '') : ''
 }
 
-// Request Interceptor (สำหรับแนบ Token ยืนยันตัวตน)
 api.interceptors.request.use(
   (config) => {
     const token = getStoredAccessToken()

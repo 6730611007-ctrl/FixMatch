@@ -44,6 +44,7 @@ export default defineConfig((/* ctx */) => {
       // vueRouterBase,
 
       publicPath: '/FixMatch/',
+
       // define: {},
       // defineEnv: {}
       // ignorePublicFolder: true,
