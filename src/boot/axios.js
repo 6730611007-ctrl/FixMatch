@@ -12,7 +12,7 @@ const SERVER_URL = 'https://disorder-mobilize-exile.ngrok-free.dev'
 
 const api = axios.create({
   // 🟢 ตั้งค่าเป็น Relative Path '/api' เพื่อให้ยิงผ่าน Vite Proxy เสมอ (แก้ Mixed Content 100%)
-  baseURL: SERVER_URL,
+  baseURL: SERVER_URL + '/api',
   timeout: 100000,
   headers: {
     Accept: 'application/json',
