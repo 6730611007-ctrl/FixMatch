@@ -21,19 +21,25 @@
                 :alt="isTechSide ? 'รูปโปรไฟล์ลูกค้า' : 'รูปโปรไฟล์ช่าง'"
               />
             </q-avatar>
-            <span class="online-indicator"></span>
+            <span
+              class="online-indicator"
+              :class="isOnline ? 'indicator-online' : 'indicator-offline'"
+            ></span>
           </div>
 
-          <div>
+          <div class="profile-copy">
             <div class="tech-name-wrapper">
-              <h3 class="tech-name">{{ technician?.name }}</h3>
+              <h3 class="tech-name">{{ technician?.name || (isTechSide ? 'ลูกค้า' : 'ช่าง') }}</h3>
               <q-icon name="verified" size="16px" class="icon-verified" />
             </div>
             <p class="tech-subtext">
-              {{ technician?.specialty }} •
-              <span :class="isOnline ? 'online-text' : 'offline-text'">{{
-                isOnline ? 'กำลังออนไลน์ (Live)' : 'แชทสดไม่พร้อมใช้งาน'
-              }}</span>
+              <span v-if="technician?.specialty" class="profile-specialty">
+                {{ technician.specialty }} ·
+              </span>
+              <span class="connection-status" :class="isOnline ? 'online-text' : 'offline-text'">
+                <span class="connection-dot"></span>
+                {{ isOnline ? 'กำลังออนไลน์' : 'แชทไม่พร้อมใช้งาน' }}
+              </span>
             </p>
           </div>
         </div>
@@ -81,7 +87,7 @@
           <span class="issue-label">เคสซ่อม:</span>
           <span class="issue-title">{{ issueTitle }}</span>
         </div>
-        <span class="issue-ref-code">#{{ orderId }}</span>
+        <span class="issue-ref-code">งาน #{{ orderId }}</span>
       </div>
 
       <!-- Messages Body -->
@@ -204,6 +210,7 @@
 
       <!-- Input Footer -->
       <div class="chat-footer">
+        <span class="composer-hint">พิมพ์ข้อความถึง{{ isTechSide ? 'ลูกค้า' : 'ช่าง' }}</span>
         <q-form @submit.prevent="sendMessage" class="chat-form">
           <q-btn
             flat
@@ -843,14 +850,15 @@ const getValidAvatar = (url) => {
 .chat-card {
   width: 100%;
   max-width: 36rem;
-  height: 85vh;
+  height: min(85vh, 48rem);
   border-top-left-radius: 1.5rem;
   border-top-right-radius: 1.5rem;
-  background-color: #f8fafc;
+  background-color: #f5f8fc;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 24px 60px -18px rgba(15, 23, 42, 0.3);
+  border: 1px solid rgba(226, 232, 240, 0.9);
 }
 
 @media (min-width: 640px) {
@@ -863,7 +871,7 @@ const getValidAvatar = (url) => {
 .drag-handle-container {
   display: flex;
   justify-content: center;
-  padding-top: 0.75rem;
+  padding-top: 0.625rem;
   padding-bottom: 0.25rem;
   background-color: #ffffff;
 }
@@ -875,19 +883,20 @@ const getValidAvatar = (url) => {
 }
 
 .drag-handle {
-  width: 3rem;
-  height: 0.375rem;
-  background-color: #e2e8f0;
+  width: 2.75rem;
+  height: 0.3rem;
+  background-color: #cbd5e1;
   border-radius: 9999px;
 }
 
 .chat-header {
-  padding: 1rem;
-  background-color: #ffffff;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 0.875rem 1rem;
+  background: linear-gradient(120deg, #ffffff 45%, #f0f9ff);
+  border-bottom: 1px solid #e8eef5;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
   flex-shrink: 0;
 }
 
@@ -902,10 +911,21 @@ const getValidAvatar = (url) => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
 }
 
 .avatar-badge-wrapper {
   position: relative;
+  flex-shrink: 0;
+  padding: 2px;
+  border: 2px solid #dbeafe;
+  border-radius: 9999px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.1);
+}
+
+.profile-copy {
+  min-width: 0;
 }
 
 .online-indicator {
@@ -914,23 +934,36 @@ const getValidAvatar = (url) => {
   right: 0;
   width: 0.75rem;
   height: 0.75rem;
-  background-color: #10b981;
+  background-color: #94a3b8;
   border: 2px solid #ffffff;
   border-radius: 9999px;
+}
+
+.online-indicator.indicator-online {
+  background-color: #10b981;
+}
+
+.online-indicator.indicator-offline {
+  background-color: #f59e0b;
 }
 
 .tech-name-wrapper {
   display: flex;
   align-items: center;
   gap: 0.375rem;
+  min-width: 0;
 }
 
 .tech-name {
+  min-width: 0;
   font-size: 1rem;
   font-weight: 700;
   color: #1e293b;
   line-height: 1.25;
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .icon-verified {
@@ -938,52 +971,82 @@ const getValidAvatar = (url) => {
 }
 
 .tech-subtext {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  margin-top: 0.125rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  color: #64748b;
+  margin-top: 0.25rem;
   margin-bottom: 0;
+  line-height: 1.4;
+}
+
+.profile-specialty {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .online-text {
   color: #059669;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .offline-text {
-  color: #ef4444;
-  font-weight: 500;
+  color: #b45309;
+  font-weight: 700;
+}
+
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.connection-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  flex-shrink: 0;
 }
 
 .call-btn {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.125rem;
+  height: 2.125rem;
   border-radius: 9999px;
-  background-color: #f1f5f9;
+  background-color: #e0f2fe;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #475569;
+  color: #0369a1;
   text-decoration: none;
-  transition: background-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .call-btn:hover {
-  background-color: #e2e8f0;
+  background-color: #bae6fd;
+  transform: translateY(-1px);
 }
 
 .issue-banner {
   padding: 0.5rem 1rem;
-  background-color: rgba(240, 249, 255, 0.8);
-  border-bottom: 1px solid rgba(224, 242, 254, 0.6);
+  background: linear-gradient(90deg, #eff6ff, #f0fdfa);
+  border-bottom: 1px solid #dbeafe;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.625rem;
   font-size: 0.75rem;
   color: #475569;
   flex-shrink: 0;
@@ -993,6 +1056,7 @@ const getValidAvatar = (url) => {
   display: flex;
   align-items: center;
   gap: 0.375rem;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1008,24 +1072,34 @@ const getValidAvatar = (url) => {
 }
 
 .issue-title {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .issue-ref-code {
+  flex: 0 0 auto;
+  max-width: 40%;
   font-family: monospace;
-  font-size: 10px;
-  color: #94a3b8;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: #64748b;
+  overflow-wrap: anywhere;
+  text-align: right;
 }
 
 .messages-body {
   flex-grow: 1;
   padding: 1rem;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
 }
 
 @media (min-width: 640px) {
@@ -1062,17 +1136,18 @@ const getValidAvatar = (url) => {
 .system-msg-badge {
   font-size: 11px;
   font-weight: 500;
-  color: #94a3b8;
-  background-color: rgba(226, 232, 240, 0.6);
+  color: #64748b;
+  background-color: #e9eef5;
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
+  line-height: 1.5;
 }
 
 .message-content {
   display: flex;
   align-items: flex-end;
   gap: 0.5rem;
-  max-width: 82%;
+  max-width: min(86%, 29rem);
 }
 
 .message-content.row-reverse {
@@ -1092,26 +1167,28 @@ const getValidAvatar = (url) => {
 
 .message-bubble {
   padding: 0.625rem 1rem;
-  border-radius: 1rem;
+  border-radius: 1.125rem;
   font-size: 0.875rem;
   line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .bubble-user {
-  background-color: #0284c7;
+  background: linear-gradient(135deg, #0284c7, #0369a1);
   color: #ffffff;
   border-bottom-right-radius: 4px;
   border-bottom-left-radius: 1rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.18);
 }
 
 .bubble-tech {
   background-color: #ffffff;
   color: #1e293b;
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border: 1px solid #e2e8f0;
   border-bottom-left-radius: 4px;
   border-bottom-right-radius: 1rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
 }
 
 .image-bubble {
@@ -1123,12 +1200,13 @@ const getValidAvatar = (url) => {
 }
 
 .invoice-bubble {
-  width: min(100%, 300px);
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.875rem;
+  width: min(100%, 20rem);
+  padding: 0.875rem;
+  border: 1px solid #dbeafe;
+  border-radius: 1rem;
   background-color: #ffffff;
   color: #1e293b;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
 }
 
 .invoice-card-title {
@@ -1163,32 +1241,39 @@ const getValidAvatar = (url) => {
 }
 
 .quick-replies-bar {
-  padding: 0.5rem 1rem;
+  padding: 0.625rem 1rem;
   background-color: #ffffff;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid #e8eef5;
   overflow-x: auto;
   white-space: nowrap;
   flex-shrink: 0;
   display: flex;
   gap: 0.5rem;
+  scroll-snap-type: x proximity;
 }
 
 .quick-reply-btn {
   display: inline-block;
-  padding: 0.375rem 0.75rem;
+  flex: 0 0 auto;
+  padding: 0.45rem 0.8rem;
   border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 500;
-  background-color: #f1f5f9;
-  color: #475569;
-  border: 1px solid rgba(226, 232, 240, 0.6);
+  font-weight: 600;
+  background-color: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #dbeafe;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+  scroll-snap-align: start;
 }
 
 .quick-reply-btn:hover {
-  background-color: #f0f9ff;
-  color: #0284c7;
+  background-color: #e0f2fe;
+  border-color: #7dd3fc;
+  transform: translateY(-1px);
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -1201,9 +1286,9 @@ const getValidAvatar = (url) => {
 }
 
 .chat-footer {
-  padding: 0.75rem;
+  padding: 0.625rem 0.75rem 0.75rem;
   background-color: #ffffff;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid #e8eef5;
   flex-shrink: 0;
 }
 
@@ -1219,6 +1304,14 @@ const getValidAvatar = (url) => {
   gap: 0.5rem;
 }
 
+.composer-hint {
+  display: block;
+  margin: 0 0 0.4rem 0.25rem;
+  color: #94a3b8;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
 .action-btn:hover {
   background-color: #f1f5f9;
 }
@@ -1232,12 +1325,107 @@ const getValidAvatar = (url) => {
 }
 
 :deep(.chat-input .q-field__control) {
-  border-radius: 0.75rem !important;
+  min-height: 2.875rem;
+  border-radius: 1rem !important;
   background-color: #f8fafc !important;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+:deep(.chat-input.q-field--focused .q-field__control) {
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
 }
 
 .send-btn {
   flex-shrink: 0;
-  min-width: 4.25rem;
+  min-height: 2.875rem;
+  min-width: 4rem;
+  border-radius: 1rem !important;
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.18);
+}
+
+@media (max-width: 599px) {
+  .chat-card {
+    height: 92vh;
+    height: 92dvh;
+    max-height: 52rem;
+    border-top-left-radius: 1.375rem;
+    border-top-right-radius: 1.375rem;
+  }
+
+  .chat-header {
+    padding: 0.75rem 0.625rem;
+    gap: 0.25rem;
+  }
+
+  .header-profile {
+    gap: 0.5rem;
+    flex: 1 1 auto;
+  }
+
+  .header-profile :deep(.q-avatar) {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .tech-name {
+    font-size: 0.9rem;
+  }
+
+  .header-actions {
+    gap: 0;
+  }
+
+  .header-actions :deep(.q-btn) {
+    min-width: 2rem;
+    min-height: 2rem;
+    padding: 0.25rem;
+  }
+
+  .call-btn {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .issue-banner {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.6875rem;
+  }
+
+  .messages-body {
+    padding: 0.875rem 0.75rem;
+    gap: 0.875rem;
+  }
+
+  .message-content {
+    max-width: 90%;
+    gap: 0.375rem;
+  }
+
+  .tech-msg-avatar {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .message-bubble {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.875rem;
+  }
+
+  .quick-replies-bar {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .chat-footer {
+    padding: 0.5rem 0.625rem calc(0.625rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .send-btn {
+    min-width: 3.75rem;
+    padding: 0 0.75rem;
+  }
 }
 </style>
