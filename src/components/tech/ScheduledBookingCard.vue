@@ -135,6 +135,7 @@ defineEmits(['open-gps', 'accept-job', 'reject-job'])
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 0.75rem;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid #f1f5f9;
 }
@@ -153,10 +154,13 @@ defineEmits(['open-gps', 'accept-job', 'reject-job'])
 }
 
 .order-number {
+    min-width: 0;
     font-family: monospace;
     font-size: 0.75rem;
     font-weight: 700;
     color: #94a3b8;
+    overflow-wrap: anywhere;
+    text-align: right;
 }
 
 /* ==========================================================================
@@ -185,6 +189,7 @@ defineEmits(['open-gps', 'accept-job', 'reject-job'])
 }
 
 .schedule-text-group {
+    min-width: 0;
     display: flex;
     flex-direction: column;
 }
@@ -202,6 +207,7 @@ defineEmits(['open-gps', 'accept-job', 'reject-job'])
     font-weight: 800;
     color: #0f172a;
     margin-top: 0.125rem;
+    overflow-wrap: anywhere;
 }
 
 @media (min-width: 640px) {
@@ -270,6 +276,7 @@ defineEmits(['open-gps', 'accept-job', 'reject-job'])
 .detail-content {
     display: flex;
     flex-direction: column;
+    min-width: 0;
     flex-grow: 1;
 }
 
@@ -291,6 +298,7 @@ defineEmits(['open-gps', 'accept-job', 'reject-job'])
     color: #1e293b;
     line-height: 1.45;
     margin: 0;
+    overflow-wrap: anywhere;
 }
 
 .landmark-box {
@@ -305,6 +313,8 @@ defineEmits(['open-gps', 'accept-job', 'reject-job'])
     font-size: 0.75rem;
     font-weight: 600;
     color: #92400e;
+    max-width: 100%;
+    overflow-wrap: anywhere;
 }
 
 .issue-label {
@@ -318,6 +328,7 @@ defineEmits(['open-gps', 'accept-job', 'reject-job'])
     font-weight: 600;
     color: #334155;
     line-height: 1.45;
+    overflow-wrap: anywhere;
 }
 
 /* ==========================================================================
@@ -406,5 +417,84 @@ defineEmits(['open-gps', 'accept-job', 'reject-job'])
 
 .mr-1 {
     margin-right: 0.375rem;
+}
+
+@media (max-width: 599px) {
+    .booking-card {
+        padding: 1rem;
+        gap: 1rem;
+        border-radius: 1.125rem !important;
+    }
+
+    .card-header {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 0.625rem;
+    }
+
+    .status-pill {
+        align-self: flex-start;
+    }
+
+    .order-number {
+        width: 100%;
+        padding: 0.5rem 0.625rem;
+        border-radius: 0.625rem;
+        background: #f8fafc;
+        line-height: 1.55;
+        text-align: left;
+    }
+
+    .schedule-box {
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.75rem;
+    }
+
+    .schedule-datetime {
+        line-height: 1.55;
+    }
+
+    .detail-row {
+        align-items: flex-start;
+    }
+
+    .customer-name,
+    .customer-phone {
+        overflow-wrap: anywhere;
+    }
+
+    .landmark-box {
+        display: flex;
+        align-items: flex-start;
+        line-height: 1.5;
+    }
+
+    .landmark-box .q-icon {
+        flex: 0 0 auto;
+        margin-top: 0.125rem;
+    }
+
+    .accept-action-wrapper {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.5rem;
+    }
+
+    .btn-accept-job {
+        grid-row: 1;
+        min-height: 3.25rem;
+        padding: 0.75rem 0.875rem !important;
+        line-height: 1.5;
+    }
+
+    .btn-reject-job {
+        grid-row: 2;
+    }
+
+    .btn-accept-job :deep(.q-btn__content),
+    .btn-reject-job :deep(.q-btn__content) {
+        white-space: normal;
+        text-align: center;
+    }
 }
 </style>

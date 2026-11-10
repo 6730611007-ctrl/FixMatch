@@ -95,13 +95,13 @@
                     <p class="empty-desc">กดรับงานจากแท็บ "งานนัดหมายล่วงหน้า" เพื่อเริ่มงานซ่อม</p>
                 </div>
 
-                <q-card v-if="ongoingJob" flat class="ongoing-card">
+                <q-card v-if="ongoingJob" flat class="ongoing-card active-job-card">
                     <div class="ongoing-header">
                         <div class="status-chip">
                             <span class="live-dot"></span>
                             <span>{{ ongoingJob.status === 'REPAIRING' ? 'กำลังตรวจเช็คและซ่อมแซม' : 'กำลังเดินทางไปบ้านลูกค้า' }}</span>
                         </div>
-                        <span class="order-no">#{{ ongoingJob.orderNo || ongoingJob.order_no }}</span>
+                        <span class="order-no">เลขที่งาน #{{ ongoingJob.orderNo || ongoingJob.order_no }}</span>
                     </div>
 
                     <div class="ongoing-body">
@@ -119,12 +119,12 @@
                     </div>
 
                     <!-- 🟢 เพิ่มปุ่มการกระทำของช่าง (โทร / แชท / นำทาง / ปิดงาน) -->
-                    <div class="q-gutter-sm row items-center q-mb-md">
-                        <q-btn outline no-caps icon="call" label="โทร" :href="`tel:${ongoingJob.customerPhone}`"
-                            class="col" />
-                        <q-btn unelevated no-caps icon="chat" label="แชทลูกค้า" color="primary" class="col"
+                    <div class="ongoing-actions q-mb-md">
+                        <q-btn outline no-caps stack icon="call" label="โทร" :href="`tel:${ongoingJob.customerPhone}`"
+                            class="active-action-btn" />
+                        <q-btn unelevated no-caps stack icon="chat" label="แชทลูกค้า" color="primary" class="active-action-btn"
                             @click="openTechChat(ongoingJob)" />
-                        <q-btn unelevated no-caps icon="navigation" label="นำทาง GPS" color="sky-6" class="col"
+                        <q-btn unelevated no-caps stack icon="navigation" label="นำทาง GPS" color="sky-6" class="active-action-btn"
                             @click="openGPSNavigation(ongoingJob.latitude, ongoingJob.longitude)" />
                     </div>
 
@@ -1221,6 +1221,37 @@ onUnmounted(() => {
     box-shadow: 0 4px 12px rgba(5, 150, 105, 0.08);
 }
 
+.active-job-card {
+    border-color: #a7f3d0;
+    background:
+        radial-gradient(circle at 100% 0, rgba(16, 185, 129, 0.09), transparent 12rem),
+        #ffffff;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+.ongoing-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.625rem;
+}
+
+.active-action-btn {
+    min-width: 0;
+    min-height: 4.25rem;
+    border-radius: 0.875rem !important;
+    font-weight: 700;
+}
+
+.active-action-btn :deep(.q-btn__content) {
+    gap: 0.25rem;
+    white-space: normal;
+    text-align: center;
+}
+
+.active-action-btn :deep(.q-icon) {
+    font-size: 1.25rem;
+}
+
 .completed-jobs-section {
     display: flex;
     flex-direction: column;
@@ -1436,6 +1467,7 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 0.75rem;
     margin-bottom: 1rem;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid #e6f4ed;
@@ -1445,12 +1477,19 @@ onUnmounted(() => {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
+    min-width: 0;
     font-size: 0.75rem;
     font-weight: 800;
     color: #047857;
     background-color: #d1fae5;
     padding: 0.25rem 0.75rem;
     border-radius: 9999px;
+    line-height: 1.5;
+}
+
+.status-chip > span:last-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .live-dot {
@@ -1461,10 +1500,13 @@ onUnmounted(() => {
 }
 
 .order-no {
+    min-width: 0;
     font-size: 0.75rem;
     font-family: monospace;
     font-weight: 700;
     color: #64748b;
+    overflow-wrap: anywhere;
+    text-align: right;
 }
 
 .ongoing-body {
@@ -1496,9 +1538,15 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     gap: 0.375rem;
+    min-width: 0;
     font-size: 0.8125rem;
     font-weight: 600;
     color: #475569;
+}
+
+.meta-item > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .meta-icon {
@@ -1533,6 +1581,85 @@ onUnmounted(() => {
 .btn-complete-job:hover {
     background-color: #047857 !important;
     box-shadow: 0 6px 16px rgba(5, 150, 105, 0.3) !important;
+}
+
+@media (max-width: 599px) {
+    .active-job-card {
+        padding: 1rem;
+        border-radius: 1.125rem !important;
+    }
+
+    .active-job-card .ongoing-header {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 0.625rem;
+        margin-bottom: 0.875rem;
+    }
+
+    .active-job-card .status-chip {
+        align-self: flex-start;
+        max-width: 100%;
+        border-radius: 0.75rem;
+        padding: 0.4rem 0.75rem;
+    }
+
+    .active-job-card .live-dot {
+        flex: 0 0 0.5rem;
+    }
+
+    .active-job-card .order-no {
+        width: 100%;
+        padding: 0.5rem 0.625rem;
+        border-radius: 0.625rem;
+        background: #f8fafc;
+        font-size: 0.6875rem;
+        line-height: 1.55;
+        text-align: left;
+    }
+
+    .active-job-card .ongoing-title {
+        font-size: 1.0625rem;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+    }
+
+    .active-job-card .job-meta-row {
+        gap: 0.75rem;
+    }
+
+    .active-job-card .meta-item {
+        align-items: flex-start;
+        line-height: 1.55;
+    }
+
+    .active-job-card .meta-icon {
+        margin-top: 0.15rem;
+    }
+
+    .active-action-btn {
+        min-height: 4rem;
+        font-size: 0.75rem;
+    }
+
+    .btn-complete-job {
+        min-height: 3.25rem;
+        padding: 0.75rem 0.875rem !important;
+        font-size: 0.875rem !important;
+        line-height: 1.5;
+        white-space: normal;
+    }
+
+    .btn-complete-job :deep(.q-btn__content) {
+        white-space: normal;
+        text-align: center;
+    }
+
+    .repairing-status-note {
+        padding: 0.625rem 0.75rem;
+        border-radius: 0.75rem;
+        background: #ecfdf5;
+        line-height: 1.55;
+    }
 }
 
 .mr-1 {
