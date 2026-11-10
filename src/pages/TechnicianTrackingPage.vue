@@ -33,6 +33,16 @@
 
       <!-- 🗺️ แผนที่จริง (Leaflet Map) -->
       <div v-if="hasCustomerCoordinates" class="map-wrapper">
+        <div class="map-legend" aria-label="คำอธิบายสัญลักษณ์บนแผนที่">
+          <span class="map-legend-item">
+            <q-icon name="home" size="16px" class="customer-legend-icon" />
+            จุดหมายลูกค้า
+          </span>
+          <span v-if="hasTechnicianCoordinates" class="map-legend-item">
+            <q-icon name="handyman" size="16px" class="technician-legend-icon" />
+            ตำแหน่งช่าง
+          </span>
+        </div>
         <div ref="mapElement" class="real-map-view"></div>
       </div>
       <div v-else class="tracking-reminder">
@@ -212,6 +222,48 @@ let techMarker = null
 let customerMarker = null
 let pollInterval = null
 
+const getMapMarkerIcon = (type) => {
+  const isCustomer = type === 'customer'
+  const color = isCustomer ? '#0284c7' : '#ea580c'
+  const label = isCustomer ? 'ตำแหน่งลูกค้า' : 'ตำแหน่งช่าง'
+  const icon = isCustomer
+    ? '<path d="M3 10.5 12 3l9 7.5M5.5 9.5V21h13V9.5M9 21v-7h6v7" />'
+    : '<circle cx="12" cy="8" r="3.25" /><path d="M5.5 20v-1.5a6.5 6.5 0 0 1 13 0V20z" />'
+
+  return L.divIcon({
+    className: 'tracking-map-marker-icon',
+    html: `<div role="img" aria-label="${label}" style="width:38px;height:38px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:${color};border:3px solid #fff;border-radius:50% 50% 50% 0;box-shadow:0 2px 6px rgba(15,23,42,.4);transform:rotate(-45deg)"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:21px;height:21px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transform:rotate(45deg)">${icon}</svg></div>`,
+    iconSize: [38, 38],
+    iconAnchor: [19, 38],
+    popupAnchor: [0, -36],
+  })
+}
+
+const getMapMarkerPopup = (title, detail = '') => {
+  const content = document.createElement('div')
+  const heading = document.createElement('strong')
+  heading.textContent = title
+  content.appendChild(heading)
+
+  if (detail) {
+    const description = document.createElement('div')
+    description.textContent = detail
+    content.appendChild(description)
+  }
+
+  return content
+}
+
+const createCustomerMarker = () => L.marker(
+  [tracking.customerLat, tracking.customerLng],
+  { icon: getMapMarkerIcon('customer'), title: 'จุดหมายลูกค้า' },
+).addTo(mapInstance).bindPopup(getMapMarkerPopup('จุดหมายลูกค้า', 'บ้านของคุณ'))
+
+const createTechnicianMarker = () => L.marker(
+  [tracking.techLat, tracking.techLng],
+  { icon: getMapMarkerIcon('technician'), title: 'ตำแหน่งช่าง' },
+).addTo(mapInstance).bindPopup(getMapMarkerPopup('ตำแหน่งช่าง', tracking.techName))
+
 const fetchTrackingData = async () => {
   const targetOrderId = activeOrderId.value
   if (!targetOrderId || !isTrackingPageActive) return
@@ -375,12 +427,10 @@ const initMap = () => {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(mapInstance)
 
-  customerMarker = L.marker([tracking.customerLat, tracking.customerLng]).addTo(mapInstance)
-    .bindPopup('<b>บ้านของคุณ (จุดหมาย)</b>').openPopup()
+  customerMarker = createCustomerMarker().openPopup()
 
   if (hasTechnicianCoordinates.value) {
-    techMarker = L.marker([tracking.techLat, tracking.techLng]).addTo(mapInstance)
-      .bindPopup('<b>ตำแหน่งช่างเทคนิค</b>')
+    techMarker = createTechnicianMarker()
   }
 }
 
@@ -404,9 +454,9 @@ const updateMapMarkers = () => {
   if (hasTechnicianCoordinates.value && techMarker) {
     techMarker.setLatLng([tracking.techLat, tracking.techLng])
     mapInstance.panTo([tracking.techLat, tracking.techLng])
+    techMarker.setPopupContent(getMapMarkerPopup('ตำแหน่งช่าง', tracking.techName))
   } else if (hasTechnicianCoordinates.value) {
-    techMarker = L.marker([tracking.techLat, tracking.techLng]).addTo(mapInstance)
-      .bindPopup('<b>ตำแหน่งช่างเทคนิค</b>')
+    techMarker = createTechnicianMarker()
   } else if (techMarker) {
     techMarker.remove()
     techMarker = null
@@ -596,6 +646,7 @@ onUnmounted(() => {
 }
 
 .map-wrapper {
+  position: relative;
   width: 100%;
   height: 300px;
   border-radius: 1rem;
@@ -606,6 +657,40 @@ onUnmounted(() => {
 .real-map-view {
   width: 100%;
   height: 100%;
+}
+
+.map-legend {
+  position: absolute;
+  z-index: 1000;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.16);
+  color: #334155;
+  font-size: 0.75rem;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  white-space: nowrap;
+}
+
+.customer-legend-icon {
+  color: #0284c7;
+}
+
+.technician-legend-icon {
+  color: #ea580c;
 }
 
 .card-box {
