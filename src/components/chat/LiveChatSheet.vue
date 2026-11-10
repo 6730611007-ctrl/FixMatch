@@ -11,7 +11,7 @@
         <div class="header-profile">
           <div class="avatar-badge-wrapper">
             <q-avatar size="42px">
-              <img :src="getValidAvatar(technician?.avatarUrl)" @error="onAvatarError"
+              <BackendImage :src="getValidAvatar(technician?.avatarUrl)"
                 :alt="isTechSide ? 'รูปโปรไฟล์ลูกค้า' : 'รูปโปรไฟล์ช่าง'" />
             </q-avatar>
             <span class="online-indicator"></span>
@@ -66,7 +66,7 @@
             <div class="message-content" :class="{ 'row-reverse': isMyMessage(msg) }">
               <!-- รูปโปรไฟล์ฝั่งคู่สนทนาจะแสดงเฉพาะฝั่งซ้าย -->
               <q-avatar v-if="!isMyMessage(msg)" size="28px" class="tech-msg-avatar">
-                <img :src="getValidAvatar(technician?.avatarUrl)"
+                <BackendImage :src="getValidAvatar(technician?.avatarUrl)"
                   :alt="isTechSide ? 'รูปโปรไฟล์ลูกค้า' : 'รูปโปรไฟล์ช่าง'" />
               </q-avatar>
 
@@ -150,6 +150,7 @@ import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import { createPaymentReceiptPdf } from '@/services/invoicePdf'
 import { getBackendUploadUrl } from '@/services/technicianProfile'
+import BackendImage from '@/components/BackendImage.vue'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -544,9 +545,6 @@ const getValidAvatar = (url) => {
   return getBackendUploadUrl(url)
 }
 
-const onAvatarError = (evt) => {
-  evt.target.src = 'https://cdn.quasar.dev/img/avatar.png'
-}
 </script>
 
 <style scoped>

@@ -78,7 +78,7 @@
         <!-- Left: Profile & Detailed Info -->
         <div class="tech-profile-group">
           <q-avatar class="tech-avatar">
-            <img :src="getAvatarUrl(tech?.avatarUrl || tech?.avatar)" @error="onAvatarError"
+            <BackendImage :src="getAvatarUrl(tech?.avatarUrl || tech?.avatar)"
               :alt="tech?.name || 'รูปช่างเทคนิค'" />
           </q-avatar>
 
@@ -178,6 +178,7 @@ import { useRouter } from 'vue-router'
 import fixmatchService from '@/services/fixmatchService'
 import { useBookingStore } from '@/stores/bookingStore'
 import { getBackendUploadUrl, normalizeTechnicianProfile } from '@/services/technicianProfile'
+import BackendImage from '@/components/BackendImage.vue'
 import { skillCategories } from '@/services/technicianSkills'
 
 const bookingStore = useBookingStore()
@@ -293,10 +294,6 @@ let refreshTimer = null
 
 const getAvatarUrl = (avatar) => {
   return getBackendUploadUrl(avatar, DEFAULT_AVATAR)
-}
-
-const onAvatarError = (e) => {
-  e.target.src = DEFAULT_AVATAR
 }
 
 const formatSpecialty = (specialty) => {

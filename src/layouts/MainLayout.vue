@@ -27,7 +27,7 @@
         <!-- ส่วนแสดงผล Avatar มุมขวา พร้อมเอฟเฟกต์มินิมอล -->
         <div v-if="user" class="row items-center cursor-pointer avatar-container" @click="toggleLeftDrawer">
           <q-avatar size="34px" class="header-user-avatar">
-            <img :src="userAvatar" @error="onAvatarError" alt="User Avatar" />
+            <BackendImage :src="userAvatar" alt="User Avatar" />
           </q-avatar>
         </div>
       </q-toolbar>
@@ -41,7 +41,7 @@
         <div v-if="user" class="drawer-app-header">
           <div class="drawer-profile">
             <q-avatar size="48px" class="shadow-1 user-avatar-drawer">
-              <img :src="userAvatar" @error="onAvatarError" alt="User Avatar" />
+              <BackendImage :src="userAvatar" alt="User Avatar" />
             </q-avatar>
             <div class="drawer-profile-copy">
               <div class="drawer-user-name">{{ user.fullName }}</div>
@@ -128,6 +128,7 @@ import { useQuasar } from 'quasar'
 import { useAuthStore } from '@/stores/authStore'
 import { getActiveTrackingOrder } from '@/services/activeTracking'
 import { getBackendUploadUrl } from '@/services/technicianProfile'
+import BackendImage from '@/components/BackendImage.vue'
 import LiveChatSheet from '../components/chat/LiveChatSheet.vue'
 
 const $q = useQuasar()
@@ -244,9 +245,6 @@ const userAvatar = computed(() => {
   return getBackendUploadUrl(avatar, DEFAULT_AVATAR)
 })
 
-const onAvatarError = (evt) => {
-  evt.target.src = DEFAULT_AVATAR
-}
 </script>
 
 <style scoped>

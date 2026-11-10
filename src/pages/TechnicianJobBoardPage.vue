@@ -8,7 +8,7 @@
                     <div class="profile-info">
                         <div class="avatar-wrapper">
                             <q-avatar size="52px" class="profile-avatar">
-                                <img :src="techProfile.avatarUrl" :alt="techProfile.fullName" />
+                                <BackendImage :src="techProfile.avatarUrl" :alt="techProfile.fullName" />
                             </q-avatar>
                             <span class="status-dot" :class="isOnline ? 'dot-online' : 'dot-offline'"></span>
                         </div>
@@ -267,6 +267,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute } from 'vue-router'
+import BackendImage from '@/components/BackendImage.vue'
 import { api } from '../boot/axios'
 import InstantJobRequestModal from '../components/tech/InstantJobRequestModal.vue'
 import ScheduledBookingCard from '../components/tech/ScheduledBookingCard.vue'

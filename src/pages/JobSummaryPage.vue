@@ -18,7 +18,7 @@
         <div class="invoice-header">
           <div class="tech-profile">
             <q-avatar size="44px" class="tech-avatar">
-              <img :src="jobDetails.techAvatar" :alt="technicianName" @error="jobDetails.techAvatar = DEFAULT_TECHNICIAN_AVATAR" />
+              <BackendImage :src="jobDetails.techAvatar" :alt="technicianName" />
             </q-avatar>
             <div>
               <h3 class="tech-name">{{ technicianName }}</h3>
@@ -134,6 +134,7 @@ import fixmatchService from '@/services/fixmatchService'
 import { useBookingStore } from '@/stores/bookingStore'
 import { getCustomerBookingHistory } from '@/services/customerBookingHistory'
 import { DEFAULT_TECHNICIAN_AVATAR, normalizeTechnicianProfile } from '@/services/technicianProfile'
+import BackendImage from '@/components/BackendImage.vue'
 import LiveChatSheet from '@/components/chat/LiveChatSheet.vue'
 import { createPaymentReceiptPdf } from '@/services/invoicePdf'
 

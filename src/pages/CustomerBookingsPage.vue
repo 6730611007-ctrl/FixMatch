@@ -82,7 +82,7 @@
                     <div class="tech-section">
                         <div class="tech-profile-info">
                             <q-avatar size="42px" class="tech-avatar">
-                                <img :src="getBookingTechnician(job).avatarUrl" @error="onAvatarError"
+                                <BackendImage :src="getBookingTechnician(job).avatarUrl"
                                     :alt="getBookingTechnician(job).name" />
                             </q-avatar>
                             <div>
@@ -127,6 +127,7 @@ import { useAuthStore } from '@/stores/authStore'
 import LiveChatSheet from '../components/chat/LiveChatSheet.vue'
 import { getCustomerBookingHistory, mergeCustomerBookingHistory } from '@/services/customerBookingHistory'
 import { DEFAULT_TECHNICIAN_AVATAR, normalizeTechnicianProfile } from '@/services/technicianProfile'
+import BackendImage from '@/components/BackendImage.vue'
 
 const $q = useQuasar()
 const authStore = useAuthStore()
@@ -236,10 +237,6 @@ const hasAssignedTechnician = (job) => {
         || job.technicianName
         || job.technician_name,
     )
-}
-
-const onAvatarError = (evt) => {
-    evt.target.src = DEFAULT_AVATAR
 }
 
 const getStatusText = (job) => {

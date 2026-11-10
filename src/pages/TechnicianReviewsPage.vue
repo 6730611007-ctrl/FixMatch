@@ -6,7 +6,7 @@
 
       <header class="page-header">
         <q-avatar v-if="isPublicTechnicianReviews" size="58px" class="page-technician-avatar">
-          <img :src="technician.avatarUrl" :alt="technician.name" @error="onAvatarError" />
+          <BackendImage :src="technician.avatarUrl" :alt="technician.name" />
         </q-avatar>
         <div v-else class="page-heading-icon">
           <q-icon name="forum" size="25px" />
@@ -131,6 +131,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import { getTechnicianAvatarUrl } from '@/services/technicianProfile'
+import BackendImage from '@/components/BackendImage.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -197,10 +198,6 @@ const fetchTechnicianReviews = async () => {
 const formatSpecialty = (specialty) => {
   const values = Array.isArray(specialty) ? specialty : [specialty]
   return values.filter(Boolean).map(String).join(', ') || 'ช่างผู้เชี่ยวชาญประจำพื้นที่'
-}
-
-const onAvatarError = (event) => {
-  event.target.src = DEFAULT_AVATAR
 }
 
 const goBack = () => {

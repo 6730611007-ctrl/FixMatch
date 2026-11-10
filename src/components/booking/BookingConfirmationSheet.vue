@@ -21,8 +21,7 @@
                 <!-- Selected Technician Summary Brief -->
                 <div v-if="technician" class="technician-brief-card">
                     <q-avatar size="44px" class="tech-avatar">
-                        <img :src="selectedTechnician.avatarUrl" @error="onImageError"
-                            :alt="selectedTechnician.name" />
+                        <BackendImage :src="selectedTechnician.avatarUrl" :alt="selectedTechnician.name" />
                     </q-avatar>
                     <div class="tech-info">
                         <span class="tech-label">ช่างเทคนิคที่เลือก</span>
@@ -152,6 +151,7 @@ import { ref, reactive, watch, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { normalizeTechnicianProfile } from '@/services/technicianProfile'
 import { useAuthStore } from '@/stores/authStore'
+import BackendImage from '@/components/BackendImage.vue'
 
 const $q = useQuasar()
 const authStore = useAuthStore()
@@ -189,10 +189,6 @@ watch(() => props.modelValue, (val) => {
 watch(isOpen, (val) => {
     emit('update:modelValue', val)
 })
-
-const onImageError = (evt) => {
-    evt.target.src = 'https://cdn.quasar.dev/img/avatar.png'
-}
 
 const getLocalDateString = (date = new Date()) => {
     const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000)

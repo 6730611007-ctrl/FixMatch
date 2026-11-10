@@ -18,7 +18,7 @@
 
       <div v-if="technician.name" class="technician-summary">
         <q-avatar size="52px">
-          <img :src="technician.avatarUrl" :alt="technician.name" @error="onAvatarError" />
+          <BackendImage :src="technician.avatarUrl" :alt="technician.name" />
         </q-avatar>
         <div>
           <div class="technician-label">ช่างที่เลือก</div>
@@ -46,6 +46,7 @@ import fixmatchService from '@/services/fixmatchService'
 import { clearActiveTrackingOrder, markTechnicianAccepted, setActiveTrackingOrder } from '@/services/activeTracking'
 import { normalizeTechnicianProfile } from '@/services/technicianProfile'
 import { useBookingStore } from '@/stores/bookingStore'
+import BackendImage from '@/components/BackendImage.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -60,10 +61,6 @@ const technician = reactive({
   avatarUrl: 'https://cdn.quasar.dev/img/avatar.png',
 })
 let pollTimer = null
-
-const onAvatarError = (event) => {
-  event.target.src = 'https://cdn.quasar.dev/img/avatar.png'
-}
 
 const returnToTechnicianSelection = async () => {
   clearActiveTrackingOrder(orderId.value)

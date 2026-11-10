@@ -44,7 +44,7 @@
         <div class="tech-info-wrapper">
           <div class="tech-avatar-group">
             <q-avatar size="52px" class="tech-avatar">
-              <img :src="getTechnicianAvatar(tracking)" @error="onImageError" :alt="tracking.techName" />
+              <BackendImage :src="getTechnicianAvatar(tracking)" :alt="tracking.techName" />
             </q-avatar>
             <div>
               <div class="tech-name-row">
@@ -115,6 +115,7 @@ import { useRoute, useRouter } from 'vue-router'
 import fixmatchService from '@/services/fixmatchService'
 import { clearActiveTrackingOrder } from '@/services/activeTracking'
 import { normalizeTechnicianProfile } from '@/services/technicianProfile'
+import BackendImage from '@/components/BackendImage.vue'
 import { createInvoicePdf } from '@/services/invoicePdf'
 import LiveChatSheet from '../components/chat/LiveChatSheet.vue'
 import L from 'leaflet'
@@ -157,10 +158,6 @@ const DEFAULT_AVATAR = 'https://cdn.quasar.dev/img/avatar.png'
 
 const getTechnicianAvatar = (data) => {
   return normalizeTechnicianProfile(data)?.avatarUrl || DEFAULT_AVATAR
-}
-
-const onImageError = (evt) => {
-  evt.target.src = DEFAULT_AVATAR
 }
 
 const snapshotKey = computed(() => `fixmatch_tracking_snapshot_${encodeURIComponent(activeOrderId.value)}`)
