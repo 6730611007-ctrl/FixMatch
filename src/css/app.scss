@@ -104,3 +104,26 @@ p {
 .fixmatch-chat-notification .q-notification__caption {
   color: #64748b;
 }
+
+.fixmatch-booking-notification {
+  border: 1px solid #a7f3d0;
+  border-left: 4px solid #059669;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 12px 30px rgb(15 23 42 / 18%);
+}
+
+.fixmatch-booking-notification .q-notification__message {
+  color: #065f46;
+  font-weight: 800;
+}
+
+.fixmatch-booking-notification .q-notification__caption {
+  color: #475569;
+  line-height: 1.5;
+}
+
+.fixmatch-booking-notification .q-notification__actions {
+  color: #047857;
+}

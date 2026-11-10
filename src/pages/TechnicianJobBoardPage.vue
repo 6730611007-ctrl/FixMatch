@@ -1,5 +1,5 @@
 <template>
-    <q-page class="job-board-page">
+    <q-page class="job-board-page" @pointerdown.capture="unlockBookingAlertAudio">
         <div class="job-board-container">
 
             <!-- Top Bar: Online/Offline Toggle Banner -->
@@ -39,6 +39,15 @@
                     </div>
 
                     <div class="toggle-wrapper">
+                        <q-btn
+                            flat
+                            round
+                            dense
+                            :icon="isBookingAlertSoundEnabled ? 'volume_up' : 'volume_off'"
+                            :color="isBookingAlertSoundEnabled ? 'positive' : 'grey-6'"
+                            :aria-label="isBookingAlertSoundEnabled ? 'ปิดเสียงแจ้งเตือนงานใหม่' : 'เปิดเสียงแจ้งเตือนงานใหม่'"
+                            :title="isBookingAlertSoundEnabled ? 'ปิดเสียงแจ้งเตือนงานใหม่' : 'เปิดเสียงแจ้งเตือนงานใหม่'"
+                            @click="toggleBookingAlertSound" />
                         <q-toggle v-model="isOnline" color="emerald" size="lg"
                             :disable="!isLocationReady"
                             @update:model-value="handleToggleOnline" />
@@ -285,6 +294,7 @@ const isPaymentHistoryPage = computed(() => route.name === 'tech-payment-history
 const isIncomingJobModalOpen = ref(false)
 const isLoadingJobs = ref(false)
 const jobLoadError = ref('')
+const isBookingAlertSoundEnabled = ref(localStorage.getItem('fixmatch_booking_sound_enabled') !== 'false')
 const isSubmitting = ref(false)
 const isCompletionDialogOpen = ref(false)
 const pendingInvoice = ref(null)
@@ -312,6 +322,11 @@ let latestCoordinates = null
 let isPublishingLocation = false
 let hasPublishedInitialLocation = false
 let hasInitializedJobs = false
+let hasInitializedScheduledJobs = false
+let knownScheduledJobIds = new Set()
+let isFetchingJobs = false
+let bookingAlertAudioContext = null
+const BookingAudioContext = window.AudioContext || window.webkitAudioContext
 
 // 🟢 สถานะเปิด-ปิดหน้าต่างแชทฝั่งช่าง
 const isChatOpen = ref(false)
@@ -454,15 +469,29 @@ const downloadPaymentReceipt = async (payment) => {
 
 // 2. ดึงรายการงานนัดหมายจริงจากฐานข้อมูล
 const fetchMyJobs = async () => {
-    if (isPaymentHistoryPage.value) return
+    if (isPaymentHistoryPage.value || isFetchingJobs) return
 
+    isFetchingJobs = true
     try {
-        isLoadingJobs.value = true
+        if (!hasInitializedScheduledJobs) isLoadingJobs.value = true
         jobLoadError.value = ''
         const response = await api.get('/jobs/technician/my-jobs')
         const jobs = response.data.data || []
 
-        scheduledJobs.value = jobs.filter(j => j.status === 'CONFIRMED' || j.status === 'PENDING')
+        const nextScheduledJobs = jobs.filter(j => j.status === 'CONFIRMED' || j.status === 'PENDING')
+        if (hasInitializedScheduledJobs) {
+            const newJobs = nextScheduledJobs.filter(job => {
+                const jobKey = getScheduledJobKey(job)
+                return jobKey && !knownScheduledJobIds.has(jobKey)
+            })
+            if (newJobs.length) notifyNewBookings(newJobs)
+        }
+        nextScheduledJobs.forEach(job => {
+            const jobKey = getScheduledJobKey(job)
+            if (jobKey) knownScheduledJobIds.add(jobKey)
+        })
+        hasInitializedScheduledJobs = true
+        scheduledJobs.value = nextScheduledJobs
         ongoingJob.value = jobs.find(j => ['IN_PROGRESS', 'REPAIRING'].includes(j.status)) || null
         completedJobs.value = jobs.filter(j => j.status === 'COMPLETED')
         if (!hasInitializedJobs) {
@@ -477,6 +506,136 @@ const fetchMyJobs = async () => {
         jobLoadError.value = error.response?.data?.detail || 'โหลดรายการงานไม่สำเร็จ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง'
     } finally {
         isLoadingJobs.value = false
+        isFetchingJobs = false
+    }
+}
+
+const getScheduledJobKey = (job) => {
+    const id = job?.id || job?.job_id || job?.orderNo || job?.order_no
+    return id ? String(id) : ''
+}
+
+const unlockBookingAlertAudio = () => {
+    if (!isBookingAlertSoundEnabled.value || !BookingAudioContext) return
+
+    try {
+        bookingAlertAudioContext ||= new BookingAudioContext()
+        if (bookingAlertAudioContext.state === 'suspended') {
+            bookingAlertAudioContext.resume().catch(error => {
+                console.warn('เปิดเสียงแจ้งเตือนงานใหม่ไม่สำเร็จ:', error)
+            })
+        }
+    } catch (error) {
+        console.warn('เตรียมเสียงแจ้งเตือนงานใหม่ไม่สำเร็จ:', error)
+    }
+}
+
+const playBookingAlertSound = () => {
+    if (!isBookingAlertSoundEnabled.value || !BookingAudioContext) return
+
+    try {
+        bookingAlertAudioContext ||= new BookingAudioContext()
+        const playChime = () => {
+            const context = bookingAlertAudioContext
+            const startAt = context.currentTime
+            const notes = [
+                { frequency: 784, start: 0 },
+                { frequency: 988, start: 0.18 },
+                { frequency: 1175, start: 0.36 },
+                { frequency: 988, start: 0.72 },
+                { frequency: 1175, start: 0.9 },
+            ]
+
+            for (const note of notes) {
+                const oscillator = context.createOscillator()
+                const gain = context.createGain()
+                const noteStart = startAt + note.start
+                oscillator.type = 'sine'
+                oscillator.frequency.setValueAtTime(note.frequency, noteStart)
+                gain.gain.setValueAtTime(0.0001, noteStart)
+                gain.gain.exponentialRampToValueAtTime(0.22, noteStart + 0.025)
+                gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + 0.2)
+                oscillator.connect(gain)
+                gain.connect(context.destination)
+                oscillator.start(noteStart)
+                oscillator.stop(noteStart + 0.21)
+                oscillator.onended = () => {
+                    oscillator.disconnect()
+                    gain.disconnect()
+                }
+            }
+        }
+
+        if (bookingAlertAudioContext.state === 'suspended') {
+            bookingAlertAudioContext.resume().then(playChime).catch(error => {
+                console.warn('เล่นเสียงแจ้งเตือนงานใหม่ไม่สำเร็จ:', error)
+            })
+        } else {
+            playChime()
+        }
+    } catch (error) {
+        console.warn('เล่นเสียงแจ้งเตือนงานใหม่ไม่สำเร็จ:', error)
+    }
+}
+
+const toggleBookingAlertSound = () => {
+    isBookingAlertSoundEnabled.value = !isBookingAlertSoundEnabled.value
+    localStorage.setItem('fixmatch_booking_sound_enabled', String(isBookingAlertSoundEnabled.value))
+    if (isBookingAlertSoundEnabled.value) unlockBookingAlertAudio()
+    $q.notify({
+        type: 'info',
+        message: isBookingAlertSoundEnabled.value ? 'เปิดเสียงแจ้งเตือนงานใหม่แล้ว' : 'ปิดเสียงแจ้งเตือนงานใหม่แล้ว',
+        icon: isBookingAlertSoundEnabled.value ? 'volume_up' : 'volume_off',
+        timeout: 1800,
+    })
+}
+
+const notifyNewBookings = (jobs) => {
+    playBookingAlertSound()
+
+    const firstJob = jobs[0]
+    const orderNo = firstJob.orderNo || firstJob.order_no
+    const issue = firstJob.issueDescription || 'งานซ่อมใหม่'
+    const caption = jobs.length > 1
+        ? `มีงานใหม่ ${jobs.length} รายการ · #${orderNo || '-'} ${issue}`
+        : `#${orderNo || '-'} · ${issue}`
+    $q.notify({
+        type: 'positive',
+        position: $q.screen.lt.md ? 'top' : 'top-right',
+        message: jobs.length > 1 ? `มีงานจองใหม่ ${jobs.length} รายการ` : 'มีลูกค้าจองงานใหม่!',
+        caption,
+        icon: 'event_available',
+        timeout: 8000,
+        classes: 'fixmatch-booking-notification',
+        actions: [
+            {
+                label: 'ดูงาน',
+                color: 'white',
+                handler: () => { activeTab.value = 'scheduled' },
+            },
+            { icon: 'close', color: 'white', round: true },
+        ],
+    })
+
+    if (document.visibilityState === 'hidden' && 'Notification' in window
+        && window.Notification.permission === 'granted') {
+        try {
+            const notification = new window.Notification(
+                jobs.length > 1 ? `มีงานจองใหม่ ${jobs.length} รายการ` : 'มีลูกค้าจองงานใหม่!',
+                {
+                    body: caption,
+                    icon: `${import.meta.env.BASE_URL}icons/favicon-96x96.png`,
+                    tag: `fixmatch-new-booking-${getScheduledJobKey(firstJob)}`,
+                },
+            )
+            notification.onclick = () => {
+                window.focus()
+                activeTab.value = 'scheduled'
+                notification.close()
+            }
+        } catch (error) {
+            console.warn('แสดงการแจ้งเตือนงานใหม่บนอุปกรณ์ไม่สำเร็จ:', error)
+        }
     }
 }
 
@@ -889,6 +1048,11 @@ onMounted(() => {
 onUnmounted(() => {
     stopAutoRefresh()
     stopLocationTracking()
+    if (bookingAlertAudioContext) {
+        bookingAlertAudioContext.close().catch(error => {
+            console.warn('ปิดเสียงแจ้งเตือนงานใหม่ไม่สำเร็จ:', error)
+        })
+    }
 })
 </script>
 
@@ -1071,6 +1235,9 @@ onUnmounted(() => {
 }
 
 .toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
     flex-shrink: 0;
 }
 
