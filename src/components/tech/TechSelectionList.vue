@@ -177,7 +177,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import fixmatchService from '@/services/fixmatchService'
 import { useBookingStore } from '@/stores/bookingStore'
-import { normalizeTechnicianProfile } from '@/services/technicianProfile'
+import { getBackendUploadUrl, normalizeTechnicianProfile } from '@/services/technicianProfile'
 import { skillCategories } from '@/services/technicianSkills'
 
 const bookingStore = useBookingStore()
@@ -292,13 +292,7 @@ const selectedTechnician = computed(() => {
 let refreshTimer = null
 
 const getAvatarUrl = (avatar) => {
-  if (!avatar || avatar === 'null' || avatar === 'undefined' || avatar === '') {
-    return DEFAULT_AVATAR
-  }
-  if (typeof avatar === 'string' && (avatar.startsWith('http://') || avatar.startsWith('https://'))) {
-    return avatar
-  }
-  return `/uploads/${avatar}`
+  return getBackendUploadUrl(avatar, DEFAULT_AVATAR)
 }
 
 const onAvatarError = (e) => {

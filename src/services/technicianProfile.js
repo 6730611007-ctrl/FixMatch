@@ -2,6 +2,29 @@ import { SERVER_URL } from '@/boot/axios'
 
 export const DEFAULT_TECHNICIAN_AVATAR = 'https://cdn.quasar.dev/img/avatar.png'
 
+export const getBackendUploadUrl = (imagePath, fallback = DEFAULT_TECHNICIAN_AVATAR) => {
+  if (!imagePath || imagePath === 'null' || imagePath === 'undefined') {
+    return fallback
+  }
+
+  const path = String(imagePath).trim()
+  if (!path) return fallback
+
+  const baseUrl = SERVER_URL.replace(/\/api\/?$/, '').replace(/\/+$/, '')
+  const localBackendUrl = path.match(
+    /^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(\/.*)?$/i,
+  )
+
+  if (localBackendUrl) {
+    return `${baseUrl}${localBackendUrl[1] || '/'}`
+  }
+
+  if (/^(https?:|data:|blob:)/i.test(path)) return path
+
+  const filename = path.replace(/^\/?(uploads\/)?/, '')
+  return `${baseUrl}/uploads/${filename}`
+}
+
 export const getTechnicianAvatarUrl = (technician) => {
   const avatar = technician?.avatarUrl
     || technician?.avatar_url
@@ -13,11 +36,7 @@ export const getTechnicianAvatarUrl = (technician) => {
     return DEFAULT_TECHNICIAN_AVATAR
   }
 
-  const imagePath = String(avatar)
-  if (/^(https?:|data:|blob:)/i.test(imagePath)) return imagePath
-
-  const baseUrl = SERVER_URL ? SERVER_URL.replace(/\/api\/?$/, '') : ''
-  return `${baseUrl}/uploads/${imagePath.replace(/^\/?(uploads\/)?/, '')}`
+  return getBackendUploadUrl(avatar)
 }
 
 export const normalizeTechnicianProfile = (technician) => {

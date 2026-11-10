@@ -127,6 +127,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from '@/stores/authStore'
 import { getActiveTrackingOrder } from '@/services/activeTracking'
+import { getBackendUploadUrl } from '@/services/technicianProfile'
 import LiveChatSheet from '../components/chat/LiveChatSheet.vue'
 
 const $q = useQuasar()
@@ -240,11 +241,7 @@ const userAvatar = computed(() => {
     || user.value?.avatar_url
     || user.value?.avatar_img
     || user.value?.picture
-  if (!avatar) return DEFAULT_AVATAR
-
-  if (/^(https?:|data:|blob:)/i.test(String(avatar))) return avatar
-
-  return `/uploads/${avatar}`
+  return getBackendUploadUrl(avatar, DEFAULT_AVATAR)
 })
 
 const onAvatarError = (evt) => {

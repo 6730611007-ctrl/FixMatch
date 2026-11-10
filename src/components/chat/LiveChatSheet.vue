@@ -147,8 +147,9 @@
 <script setup>
 import { ref, watch, nextTick, onUnmounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { api, SERVER_URL } from '@/boot/axios'
+import { api } from '@/boot/axios'
 import { createPaymentReceiptPdf } from '@/services/invoicePdf'
+import { getBackendUploadUrl } from '@/services/technicianProfile'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -539,13 +540,8 @@ const handleImageSelected = async (e) => {
 }
 
 const getValidAvatar = (url) => {
-  if (!url || url === 'null' || url === 'undefined') return 'https://cdn.quasar.dev/img/avatar.png'
-  if (String(url).startsWith('http')) return url
   if (String(url).includes('avatar2.jpg')) return 'https://cdn.quasar.dev/img/avatar.png'
-
-  const baseUrl = SERVER_URL ? SERVER_URL.replace(/\/api\/?$/, '') : 'http://localhost:8000'
-  const cleanFilename = String(url).replace(/^\/?(uploads\/)?/, '')
-  return `${baseUrl}/uploads/${cleanFilename}`
+  return getBackendUploadUrl(url)
 }
 
 const onAvatarError = (evt) => {
