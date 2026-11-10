@@ -151,7 +151,7 @@ const activeTechInfo = ref({
 
 const navItems = [
   { title: 'เลือกช่างและจองบริการ', icon: 'handyman', to: '/', roles: ['customer', 'admin'] },
-  { title: 'แจ้งซ่อม / วิเคราะห์ปัญหา', icon: 'build_circle', to: '/diagnostic', roles: ['customer', 'admin'] },
+  { title: 'แจ้งซ่อม / วิเคราะห์ปัญหา', icon: 'build_circle', to: '/diagnostic', roles: ['customer', 'admin'], requiresAuth: true },
   { title: 'รายการจองและติดต่อช่าง', icon: 'history', to: '/my-bookings', roles: ['customer', 'admin'], requiresAuth: true },
   { title: 'บอร์ดรับงานซ่อม (สำหรับช่าง)', icon: 'assignment', to: '/tech-job-board', roles: ['technician', 'admin'] },
   { title: 'เสียงตอบรับจากลูกค้า', icon: 'rate_review', to: '/tech-reviews', roles: ['technician'] },
@@ -160,7 +160,7 @@ const navItems = [
 
 const filteredMenuItems = computed(() => {
   const currentRole = user.value?.role || 'customer'
-  return navItems.filter(item => item.roles.includes(currentRole) && (!item.requiresAuth || user.value))
+  return navItems.filter(item => item.roles.includes(currentRole) && (!item.requiresAuth || authStore.isLoggedIn))
 })
 
 const leftDrawerOpen = ref(false)

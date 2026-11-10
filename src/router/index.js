@@ -36,6 +36,10 @@ export default defineRouter((/* { store, ssrContext } */) => {
   })
 
   Router.beforeEach((to) => {
+    if (to.name === 'diagnostic' && !localStorage.getItem('auth_token')) {
+      return { name: 'login', query: { redirect: to.fullPath }, replace: true }
+    }
+
     const activeOrderId = getActiveTrackingOrder()
     if (activeOrderId) {
       const hasAuthToken = Boolean(localStorage.getItem('auth_token'))
