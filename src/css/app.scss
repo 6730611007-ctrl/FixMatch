@@ -89,3 +89,18 @@ p {
     line-height: 1.4;
   }
 }
+
+.fixmatch-chat-notification {
+  border: 1px solid #dbeafe;
+  border-left: 4px solid #0284c7;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgb(15 23 42 / 16%);
+}
+
+.fixmatch-chat-notification .q-notification__message {
+  font-weight: 700;
+}
+
+.fixmatch-chat-notification .q-notification__caption {
+  color: #64748b;
+}
