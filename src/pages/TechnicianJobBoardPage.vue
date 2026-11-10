@@ -591,6 +591,8 @@ const toggleBookingAlertSound = () => {
 }
 
 const notifyNewBookings = (jobs) => {
+    if (localStorage.getItem('fixmatch_push_enabled') === 'true') return
+
     playBookingAlertSound()
 
     const firstJob = jobs[0]

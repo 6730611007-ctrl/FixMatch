@@ -495,6 +495,8 @@ const getNotificationBody = (message) => {
 const notifyIncomingMessage = (message) => {
   if (!message.sender || message.sender === 'system' || isMyMessage(message)) return
 
+  if (localStorage.getItem('fixmatch_push_enabled') === 'true') return
+
   if (message.id !== undefined && message.id !== null) {
     const dedupeKey = `fixmatch_chat_notified_${props.orderId}_${encodeURIComponent(message.id)}`
     if (sessionStorage.getItem(dedupeKey)) return

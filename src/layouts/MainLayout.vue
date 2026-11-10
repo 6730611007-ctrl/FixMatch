@@ -30,6 +30,11 @@
 
         <!-- ส่วนแสดงผล Avatar มุมขวา พร้อมเอฟเฟกต์มินิมอล -->
         <div v-if="user" class="row items-center cursor-pointer avatar-container" @click="toggleLeftDrawer">
+          <PushNotificationControl
+            ref="pushNotificationControl"
+            class="header-push-control"
+            @click.stop
+          />
           <q-avatar size="34px" class="header-user-avatar">
             <BackendImage :src="userAvatar" alt="User Avatar" />
           </q-avatar>
@@ -133,6 +138,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { getActiveTrackingOrder } from '@/services/activeTracking'
 import { getBackendUploadUrl } from '@/services/technicianProfile'
 import BackendImage from '@/components/BackendImage.vue'
+import PushNotificationControl from '@/components/PushNotificationControl.vue'
 import LiveChatSheet from '../components/chat/LiveChatSheet.vue'
 
 const $q = useQuasar()
@@ -144,6 +150,7 @@ const DEFAULT_AVATAR = 'https://cdn.quasar.dev/img/avatar.png'
 const fixMatchLogo = `${import.meta.env.BASE_URL}icons/favicon-128x128.png`
 const user = computed(() => authStore.user)
 const isLogoutDialogOpen = ref(false)
+const pushNotificationControl = ref(null)
 
 const isChatOpen = ref(false)
 const activeOrderNo = ref('')
@@ -179,7 +186,7 @@ const requestLogout = () => {
   isLogoutDialogOpen.value = true
 }
 
-const handleLogout = () => {
+const handleLogout = async () => {
   if (getActiveTrackingOrder()) {
     isLogoutDialogOpen.value = false
     $q.notify({
@@ -191,6 +198,7 @@ const handleLogout = () => {
     return
   }
 
+  await pushNotificationControl.value?.unsubscribeForLogout()
   authStore.logout()
   isLogoutDialogOpen.value = false
   leftDrawerOpen.value = false
