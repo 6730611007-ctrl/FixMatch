@@ -20,8 +20,12 @@
           class="header-icon-btn q-mr-sm" />
 
         <!-- โลโก้หรือชื่อแบรนด์แบบสะอาดตา -->
-        <q-toolbar-title class="text-weight-bold text-subtitle1 tracking-tight text-white">
-          FIXMATCH
+        <q-toolbar-title class="header-brand-title">
+          <img :src="fixMatchLogo" class="header-brand-mark" alt="" />
+          <span class="header-brand-name">
+            <span class="brand-fix">Fix</span><span class="brand-match">Match</span>
+            <span class="brand-pro">Pro</span>
+          </span>
         </q-toolbar-title>
 
         <!-- ส่วนแสดงผล Avatar มุมขวา พร้อมเอฟเฟกต์มินิมอล -->
@@ -137,6 +141,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const DEFAULT_AVATAR = 'https://cdn.quasar.dev/img/avatar.png'
+const fixMatchLogo = `${import.meta.env.BASE_URL}icons/favicon-128x128.png`
 const user = computed(() => authStore.user)
 const isLogoutDialogOpen = ref(false)
 
@@ -407,15 +412,42 @@ const userAvatar = computed(() => {
   min-height: 62px;
 }
 
-.glass-header :deep(.q-toolbar__title) {
-  color: #263746 !important;
-  font-weight: 800;
-  letter-spacing: -.35px;
+.header-brand-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0;
 }
 
-.glass-header :deep(.q-toolbar__title::after) {
-  content: " Pro";
-  color: #e2a43b;
+.header-brand-mark {
+  display: block;
+  width: 2.375rem;
+  height: 2.375rem;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.header-brand-name {
+  display: inline-flex;
+  align-items: baseline;
+  min-width: 0;
+  color: #145da0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+}
+
+.brand-match {
+  color: #2fb77a;
+}
+
+.brand-pro {
+  margin-left: 0.25rem;
+  color: #d89a2b;
+  font-size: 0.75rem;
+  letter-spacing: 0;
 }
 
 .header-icon-btn {
