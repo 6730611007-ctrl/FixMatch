@@ -320,7 +320,11 @@ const formatServiceArea = (areas) => Array.isArray(areas) ? areas.join(', ') : S
 
 const openTechnicianReviews = (technician) => {
   if (!technician?.id) return
-  router.push({ name: 'technician-reviews', params: { technicianId: technician.id } })
+  router.push({
+    name: 'technician-reviews',
+    params: { technicianId: technician.id },
+    query: { returnTo: router.currentRoute.value.fullPath },
+  })
 }
 
 const handleSelect = (tech) => {

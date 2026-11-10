@@ -201,6 +201,12 @@ const formatSpecialty = (specialty) => {
 }
 
 const goBack = () => {
+  const returnTo = route.query.returnTo
+  if (typeof returnTo === 'string' && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
+    router.push(returnTo)
+    return
+  }
+
   if (window.history.state?.back) {
     router.back()
   } else {

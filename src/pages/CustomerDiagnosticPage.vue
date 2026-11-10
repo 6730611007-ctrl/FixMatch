@@ -109,7 +109,7 @@
 
                 <!-- Step 3: Technician Selection -->
                 <div v-else-if="currentStep === 3" key="step3" class="step-space">
-                    <TechSelectionList @select-technician="openBookingModal" @confirm-booking="openBookingModal" />
+                    <TechSelectionList :auto-select-first="false" @confirm-booking="openBookingModal" />
 
                     <q-btn flat no-caps class="btn-back" @click="currentStep = 2">
                         <q-icon name="arrow_back" size="16px" class="back-icon" />
@@ -138,11 +138,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useBookingStore } from '@/stores/bookingStore'
 import { useAuthStore } from '@/stores/authStore'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { setActiveTrackingOrder } from '@/services/activeTracking'
 import { saveCustomerBooking } from '@/services/customerBookingHistory'
 import fixmatchService from '@/services/fixmatchService'
@@ -153,11 +153,17 @@ import TechnicianTrackingPage from './TechnicianTrackingPage.vue'
 import JobSummaryPage from './JobSummaryPage.vue'
 
 const $q = useQuasar()
+const route = useRoute()
 const router = useRouter()
 const bookingStore = useBookingStore()
 const authStore = useAuthStore()
 
-const currentStep = ref(1)
+const getStepFromQuery = (value) => {
+    const step = Number(value)
+    return Number.isInteger(step) && step >= 1 && step <= 3 ? step : 1
+}
+
+const currentStep = ref(getStepFromQuery(route.query.step))
 const isAnalyzing = ref(false)
 const fileInputRef = ref(null)
 
@@ -191,6 +197,21 @@ const goToStep = (stepId) => {
         currentStep.value = stepId
     }
 }
+
+watch(currentStep, (step) => {
+    if (route.name !== 'diagnostic') return
+
+    const query = { ...route.query }
+    if (step <= 3) {
+        query.step = String(step)
+    } else {
+        delete query.step
+    }
+
+    if (query.step !== route.query.step) {
+        router.replace({ query })
+    }
+})
 
 const triggerFileInput = () => {
     if (fileInputRef.value) fileInputRef.value.pickFiles()
