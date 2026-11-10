@@ -24,10 +24,6 @@ jobs:
           npm ci
           npx quasar build
 
-      # เทคนิคป้องกันหน้า 404 เวลา Refresh หน้าเว็บย่อยใน SPA (Single Page Application)
-      - name: Copy index.html to 404.html
-        run: cp dist/spa/index.html dist/spa/404.html
-
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:

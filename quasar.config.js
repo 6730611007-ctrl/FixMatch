@@ -40,7 +40,7 @@ export default defineConfig((/* ctx */) => {
       // https://v2.quasar.dev/quasar-cli-vite/page-routing-with-vue-router#filename-based-routing
       // filenameBasedRouting: true,
 
-      vueRouterMode: 'history', // available values: 'hash', 'history'
+      vueRouterMode: 'hash', // GitHub Pages cannot rewrite history-mode routes to index.html
       // vueRouterBase,
 
       publicPath: '/FixMatch/',
