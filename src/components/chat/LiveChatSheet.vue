@@ -147,7 +147,7 @@
 <script setup>
 import { ref, watch, nextTick, onUnmounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { api } from '@/boot/axios'
+import { api, SERVER_URL } from '@/boot/axios'
 import { createPaymentReceiptPdf } from '@/services/invoicePdf'
 import { getBackendUploadUrl } from '@/services/technicianProfile'
 import BackendImage from '@/components/BackendImage.vue'
@@ -256,20 +256,14 @@ const isMyMessage = (msg) => {
 const initWebSocket = () => {
   if (websocket) return
 
-  const isHttps = window.location.protocol === 'https:'
-  const protocol = isHttps ? 'wss:' : 'ws:'
-  const host = window.location.host
-  const hostname = window.location.hostname
-
-  const isTunnel = isHttps || host.includes('trycloudflare.com')
   const token = localStorage.getItem('auth_token')?.replace(/^Bearer\s+/i, '').trim()
   if (!token) {
     isOnline.value = false
     return
   }
-  const wsUrl = isTunnel
-    ? `${protocol}//${host}/ws/chat/${props.orderId}?token=${encodeURIComponent(token)}`
-    : `${protocol}//${hostname}:8000/ws/chat/${props.orderId}?token=${encodeURIComponent(token)}`
+  const wsUrl = new URL(`/ws/chat/${encodeURIComponent(props.orderId)}`, SERVER_URL)
+  wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:'
+  wsUrl.searchParams.set('token', token)
 
   websocket = new WebSocket(wsUrl)
 
